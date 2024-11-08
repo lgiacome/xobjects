@@ -623,6 +623,9 @@ class ContextCpu(XContext):
 
             # Inverse tranform (in place)
             plan.itransform(data2)
+
+            # Real tranform (in place)
+            plan.rtransform(data2)
         """
         try:
             num_threads = self.omp_get_max_threads()
@@ -896,6 +899,18 @@ class FFTCpu(object):
         else:
             data[:] = np.fft.ifftn(data, axes=self.axes)[:]
 
+    def rtransform(self, data):
+        """The transform is done inplace"""
+        if self.use_pyfftw:
+            assert data is self.data
+            # according to the pyfftw documentation, the real pyfftw deciedes to
+            # use rfftn or fftn depending on the type of the input array,
+            # therfore here we assert that the input is real
+            assert np.isrealobj(data), "Input array must be real"
+            self.fftw.execute()
+            data[:] = self.data_temp[:] / self.ifftw.N
+        else:
+            data[:] = np.fft.rfftn(data, axes=self.axes)[:]
 
 if _enabled:
     available.append(ContextCpu)
